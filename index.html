@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeRoS — ERD Editor</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23185FA5'/%3E%3Crect x='6' y='6' width='8' height='20' rx='2' fill='white' opacity='.9'/%3E%3Crect x='18' y='14' width='8' height='12' rx='2' fill='white'/%3E%3Ccircle cx='10' cy='10' r='2' fill='%234d8ef0'/%3E%3Ccircle cx='22' cy='18' r='2' fill='%233ecf74'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--bg4:#252d3f;
+  --border:#2e3850;--border2:#3d4f70;
+  --text:#e2e8f5;--text2:#8b9abf;--text3:#5a6a8a;
+  --blue:#4d8ef0;--blue2:#2d6dd4;--blue-bg:#1a2a4a;
+  --green:#3ecf74;--green-bg:#0f2a1a;
+  --red:#f05a5a;--red-bg:#2a0f0f;
+  --amber:#f0a040;--amber-bg:#2a1a00;
+  --purple:#a070f0;--purple-bg:#1e1035;
+  --teal:#40d0c0;--teal-bg:#0f2520;
+  --radius:8px;--sidebar:300px;--toolbar:48px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;display:flex;flex-direction:column}
+
+/* PROJECT BAR */
+#project-bar{height:38px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:0 12px;flex-shrink:0;z-index:110}
+#project-bar .pb-label{font-size:11px;color:var(--text3);white-space:nowrap}
+#project-select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:3px 8px;font-size:12px;outline:none;cursor:pointer;min-width:140px;max-width:200px}
+#project-select:focus{border-color:var(--blue)}
+#project-select option{background:var(--bg3)}
+.pb-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.pb-btn:hover{border-color:var(--blue);color:var(--text)}
+.pb-btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+#pb-dbname{font-size:11px;color:var(--teal);background:var(--teal-bg);border:1px solid #40d0c030;border-radius:4px;padding:2px 8px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pb-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+
+/* TOOLBAR */
+#toolbar{height:var(--toolbar);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 12px;flex-shrink:0;z-index:100}
+#toolbar .logo{font-weight:700;font-size:15px;color:var(--blue);letter-spacing:-.3px;margin-left:12px;display:flex;align-items:center;gap:6px}
+#toolbar .logo span{color:var(--text2);font-weight:400;font-size:12px}
+.tb-sep{width:1px;height:24px;background:var(--border);margin:0 4px}
+.tb-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tb-btn:hover{border-color:var(--blue);color:var(--text);background:var(--blue-bg)}
+.tb-btn svg{flex-shrink:0}
+.tb-btn.primary{background:var(--blue2);border-color:var(--blue);color:#fff}
+.tb-btn.primary:hover{background:var(--blue);filter:brightness(1.1)}
+.tb-btn.danger{border-color:var(--border)}
+.tb-btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+#tb-zoom{font-size:11px;color:var(--text3);min-width:38px;text-align:center}
+.spacer{flex:1}
+
+/* MAIN LAYOUT */
+#main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+#sidebar{width:var(--sidebar);background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+#sidebar-tabs{display:flex;border-bottom:1px solid var(--border)}
+.s-tab{flex:1;padding:10px 0;text-align:center;font-size:12px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.s-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+#sidebar-body{flex:1;overflow-y:auto;padding:12px}
+#sidebar-body::-webkit-scrollbar{width:4px}
+#sidebar-body::-webkit-scrollbar-track{background:transparent}
+#sidebar-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* TABLE LIST */
+.tbl-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.tbl-item:hover{border-color:var(--border2)}
+.tbl-item.selected{border-color:var(--blue)}
+.tbl-header{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.tbl-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tbl-name{font-size:13px;font-weight:600;flex:1}
+.tbl-count{font-size:10px;color:var(--text3);background:var(--bg4);padding:2px 6px;border-radius:10px}
+.tbl-actions{display:flex;gap:4px;margin-right:auto}
+.icon-btn{width:22px;height:22px;border-radius:4px;border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.icon-btn:hover{background:var(--bg4);color:var(--text)}
+.icon-btn.del:hover{color:var(--red)}
+
+/* FIELDS IN SIDEBAR */
+.field-list{padding:0 10px 8px}
+.field-row{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;color:var(--text2);border-top:1px solid var(--border)}
+.field-badge{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700;flex-shrink:0}
+.badge-pk{background:var(--amber-bg);color:var(--amber);border:1px solid #f0a04040}
+.badge-fk{background:var(--blue-bg);color:var(--blue);border:1px solid #4d8ef040}
+.field-name{flex:1;font-weight:500}
+.field-type{color:var(--text3);font-style:italic}
+.field-nn{color:var(--red);font-size:9px}
+
+/* FORMS */
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;transition:border-color .15s;font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--blue)}
+.form-group select option{background:var(--bg3)}
+.s-btn{width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;transition:all .15s;margin-bottom:6px;text-align:center}
+.s-btn:hover{border-color:var(--blue);color:var(--blue)}
+.s-btn.primary{background:var(--blue2);border-color:var(--blue);color:#fff}
+.s-btn.primary:hover{background:var(--blue)}
+.s-btn.danger{color:var(--red)}
+.s-btn.danger:hover{border-color:var(--red);background:var(--red-bg)}
+
+/* CANVAS */
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+#canvas{position:absolute;top:0;left:0;cursor:grab;user-select:none}
+#canvas.grabbing{cursor:grabbing}
+#canvas svg.bg-grid{position:absolute;top:0;left:0;pointer-events:none}
+
+/* TABLE NODES */
+.tbl-node{position:absolute;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:var(--bg2);min-width:200px;box-shadow:0 4px 20px #00000080;cursor:move;transition:border-color .15s}
+.tbl-node:hover{border-color:var(--border2)}
+.tbl-node.selected{border-color:var(--blue);box-shadow:0 0 0 2px #4d8ef030,0 4px 20px #00000080}
+.tbl-node .node-hdr{padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:move}
+.tbl-node .node-hdr .nh-color{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tbl-node .node-hdr .nh-name{font-size:13px;font-weight:700;flex:1;letter-spacing:.3px}
+.tbl-node .node-hdr .nh-cnt{font-size:10px;opacity:.6}
+.tbl-node .node-body{border-top:1px solid var(--border)}
+.tbl-node .nf-row{display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:11px;border-top:1px solid #ffffff08;transition:background .1s}
+.tbl-node .nf-row:hover{background:#ffffff06}
+.tbl-node .nf-row:first-child{border-top:none}
+.nf-pk{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--amber-bg);color:var(--amber);border:1px solid #f0a04040;flex-shrink:0}
+.nf-fk{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--blue-bg);color:var(--blue);border:1px solid #4d8ef040;flex-shrink:0}
+.nf-name{flex:1;color:var(--text)}
+.nf-type{color:var(--text3);font-style:italic}
+.nf-nn{color:var(--red);font-size:9px;margin-right:2px}
+.nf-port{width:8px;height:8px;border-radius:50%;background:var(--border2);border:1.5px solid var(--bg2);cursor:crosshair;flex-shrink:0;transition:background .15s}
+.nf-port:hover,.nf-port.active{background:var(--blue)}
+
+/* SVG RELATIONS */
+#relations-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
+.rel-line{stroke:var(--border2);stroke-width:1.5;fill:none;pointer-events:stroke;cursor:pointer}
+.rel-line:hover{stroke:var(--blue)}
+.rel-line.selected-rel{stroke:var(--blue)}
+.rel-label{font-size:10px;fill:var(--text3)}
+
+/* CONTEXT MENU */
+#ctx-menu{position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:4px;z-index:9999;display:none;min-width:160px;box-shadow:0 8px 32px #000a}
+.ctx-item{padding:6px 12px;font-size:12px;cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px;color:var(--text)}
+.ctx-item:hover{background:var(--bg3)}
+.ctx-item.danger{color:var(--red)}
+.ctx-item.danger:hover{background:var(--red-bg)}
+.ctx-sep{height:1px;background:var(--border);margin:3px 0}
+
+/* MODAL */
+#modal-overlay{position:fixed;inset:0;background:#000000b0;z-index:1000;display:flex;align-items:center;justify-content:center;display:none}
+#modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;min-width:420px;max-width:90vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px #000c}
+.modal.wide{min-width:560px}
+.modal h2{font-size:16px;margin-bottom:16px;color:var(--text)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.modal-footer button{padding:8px 18px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:13px;transition:all .15s}
+.modal-footer button:hover{border-color:var(--border2)}
+.modal-footer button.primary{background:var(--blue2);border-color:var(--blue);color:#fff}
+.modal-footer button.primary:hover{background:var(--blue)}
+.modal-footer button.danger{color:var(--red)}
+.modal-footer button.danger:hover{border-color:var(--red);background:var(--red-bg)}
+
+/* FIELD EDITOR IN MODAL */
+.field-editor-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 8px}
+.field-editor-row input,.field-editor-row select{background:var(--bg4);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 6px;font-size:12px;outline:none}
+.field-editor-row input:focus,.field-editor-row select:focus{border-color:var(--blue)}
+.field-editor-row .fe-name{flex:2;min-width:80px}
+.field-editor-row .fe-type{flex:1;min-width:70px}
+.field-editor-row .fe-check{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text3);white-space:nowrap}
+.field-editor-row .fe-check input{width:14px;height:14px;accent-color:var(--blue)}
+.fe-del{background:none;border:none;color:var(--text3);cursor:pointer;padding:2px 4px;border-radius:3px;font-size:14px;line-height:1}
+.fe-del:hover{color:var(--red)}
+#add-field-btn{width:100%;padding:6px;border-radius:6px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;transition:all .15s;margin-top:4px}
+#add-field-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+/* EXPORT/IMPORT PANEL */
+.export-area{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:11px;font-family:'Consolas',monospace;color:var(--green);max-height:360px;overflow-y:auto;white-space:pre;line-height:1.6;tab-size:2}
+.export-area::-webkit-scrollbar{width:4px}
+.export-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.import-tabs{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.import-tab{flex:1;padding:7px;text-align:center;font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text3);border:none;transition:all .15s}
+.import-tab.active{background:var(--blue2);color:#fff}
+.import-drop-area{border:2px dashed var(--border2);border-radius:8px;padding:24px;text-align:center;color:var(--text3);font-size:12px;cursor:pointer;transition:all .15s;margin-bottom:10px}
+.import-drop-area:hover,.import-drop-area.drag-over{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.import-drop-area svg{margin-bottom:8px;display:block;margin-left:auto;margin-right:auto}
+
+/* RELATION MODAL */
+.rel-preview{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:12px;color:var(--text2);margin-bottom:12px;font-family:monospace}
+
+/* NOTIFICATIONS */
+#notif{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.notif-item{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;font-size:12px;color:var(--text);box-shadow:0 4px 16px #000a;animation:slideIn .2s ease;display:flex;align-items:center;gap:8px}
+.notif-item.success{border-color:var(--green);color:var(--green)}
+.notif-item.error{border-color:var(--red);color:var(--red)}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* SECTION HEADERS */
+.s-section{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:12px 0 6px;font-weight:600}
+
+/* RELATIONS LIST */
+.rel-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:11px;display:flex;align-items:center;gap:8px}
+.rel-item .ri-from{color:var(--blue);font-weight:600}
+.rel-item .ri-arrow{color:var(--text3)}
+.rel-item .ri-to{color:var(--green);font-weight:600}
+.rel-item .ri-type{font-size:9px;color:var(--text3);background:var(--bg4);padding:1px 5px;border-radius:3px;margin-right:auto}
+
+/* MINI-MAP */
+#minimap{position:absolute;bottom:16px;left:16px;width:160px;height:110px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;z-index:50}
+#minimap canvas{width:100%;height:100%}
+#minimap-label{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:var(--text3);pointer-events:none}
+
+/* STATS BAR */
+#stats-bar{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:11px;color:var(--text3);display:flex;gap:12px;z-index:50}
+#stats-bar span{display:flex;align-items:center;gap:4px}
+#stats-bar b{color:var(--text)}
+
+/* TOOLTIP */
+.tooltip{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text);z-index:9999;pointer-events:none;display:none;box-shadow:0 4px 12px #000a}
+.kbd{background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px;font-family:monospace}
+
+/* PROJECT LIST in modal */
+.proj-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer;transition:border-color .15s}
+.proj-item:hover{border-color:var(--border2)}
+.proj-item.active-proj{border-color:var(--blue)}
+.proj-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.proj-info{flex:1}
+.proj-info .pi-name{font-size:13px;font-weight:600}
+.proj-info .pi-meta{font-size:10px;color:var(--text3);margin-top:2px}
+.proj-db{font-size:10px;color:var(--teal);background:var(--teal-bg);border:1px solid #40d0c030;border-radius:3px;padding:1px 6px}
+
+/* SQL IMPORT RESULT */
+.sql-parse-result{background:var(--bg);border:1px solid var(--green);border-radius:6px;padding:10px;font-size:11px;color:var(--green);margin-top:8px;max-height:200px;overflow-y:auto}
+.sql-parse-result.error-result{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- PROJECT BAR -->
+<div id="project-bar">
+  <span class="pb-label">پروژه:</span>
+  <select id="project-select" onchange="switchProject(this.value)"></select>
+  <button class="pb-btn" onclick="openProjectsModal()">📁 مدیریت پروژه‌ها</button>
+  <div class="pb-sep"></div>
+  <span class="pb-label">دیتابیس:</span>
+  <span id="pb-dbname">—</span>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="7" fill="#185FA5"/>
+      <rect x="6" y="6" width="8" height="20" rx="2" fill="white" opacity=".9"/>
+      <rect x="18" y="14" width="8" height="12" rx="2" fill="white"/>
+      <circle cx="10" cy="10" r="2" fill="#4d8ef0"/>
+      <circle cx="22" cy="18" r="2" fill="#3ecf74"/>
+    </svg>
+    MeRoS ERD
+    <span>v2.0</span>
+  </div>
+  <div class="tb-sep"></div>
+  <button class="tb-btn primary" onclick="openAddTableModal()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    جدول جدید
+  </button>
+  <button class="tb-btn" onclick="openAddRelModal()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5h9M8 3.5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    رابطه جدید
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="openExportModal('sql')">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10h9M6.5 2v6M4 6l2.5 2.5L9 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    خروجی SQL
+  </button>
+  <button class="tb-btn" onclick="openExportModal('json')">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10h9M6.5 2v6M4 6l2.5 2.5L9 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    خروجی JSON
+  </button>
+  <button class="tb-btn" onclick="openImportModal()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10h9M6.5 8V2M4 4l2.5-2.5L9 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    ورودی
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="autoLayout()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="8" y="1" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="8" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+    چیدمان خودکار
+  </button>
+  <button class="tb-btn" onclick="fitView()">تنظیم نمایش</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="zoom(-0.1)">−</button>
+  <span id="tb-zoom">100%</span>
+  <button class="tb-btn" onclick="zoom(0.1)">+</button>
+  <div class="spacer"></div>
+  <button class="tb-btn" onclick="showHelp()">راهنما</button>
+  <button class="tb-btn danger" onclick="resetAll()">پاک‌کردن همه</button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="sidebar-tabs">
+      <div class="s-tab active" onclick="switchTab('tables')">جداول</div>
+      <div class="s-tab" onclick="switchTab('relations')">روابط</div>
+      <div class="s-tab" onclick="switchTab('export')">خروجی</div>
+    </div>
+    <div id="sidebar-body"></div>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="canvas-wrap">
+    <div id="canvas">
+      <svg id="relations-svg"></svg>
+    </div>
+    <div id="stats-bar">
+      <span><b id="st-tables">0</b> جدول</span>
+      <span><b id="st-fields">0</b> فیلد</span>
+      <span><b id="st-rels">0</b> رابطه</span>
+    </div>
+    <div id="minimap"><canvas id="mm-canvas"></canvas><div id="minimap-label">minimap</div></div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu"></div>
+<div class="tooltip" id="tooltip"></div>
+<div id="notif"></div>
+
+<!-- MODAL OVERLAY -->
+<div id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<input type="file" id="file-input-json" accept=".json" style="display:none" onchange="handleFileImport(event,'json')">
+<input type="file" id="file-input-sql" accept=".sql,.txt" style="display:none" onchange="handleFileImport(event,'sql')">
+
+<script>
+// =============================================
+//  PROJECTS SYSTEM
+// =============================================
+const STORAGE_KEY = 'meros_erd_projects_v2';
+const COLORS_PROJECT = ['#185FA5','#7B5EA7','#2E9E5B','#E0473E','#F4A623','#40d0c0','#f05a9a','#0F6E56'];
+
+let projects = []; // [{id, name, dbName, color, state:{tables,relations,nextId}}]
+let currentProjectId = null;
+
+function getState() {
+  const p = projects.find(x=>x.id===currentProjectId);
+  return p ? p.state : {tables:[],relations:[],nextId:1};
+}
+function setState(s) {
+  const p = projects.find(x=>x.id===currentProjectId);
+  if(p) p.state = s;
+}
+
+function saveAll() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({projects, currentProjectId}));
+}
+
+function genProjId() { return 'proj_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
+
+// =============================================
+//  INITIAL LOGIN SCHEMA
+// =============================================
+const LOGIN_SCHEMA = {
+  tables: [
+    {id:'t1',name:'users',color:'#185FA5',x:80,y:80,fields:[
+      {id:'f1',name:'id',type:'INTEGER',pk:true,fk:false,nn:true,unique:false},
+      {id:'f2',name:'username',type:'VARCHAR(255)',pk:false,fk:false,nn:true,unique:true},
+      {id:'f3',name:'email',type:'VARCHAR(255)',pk:false,fk:false,nn:true,unique:true},
+      {id:'f4',name:'password_hash',type:'TEXT',pk:false,fk:false,nn:true,unique:false},
+      {id:'f5',name:'created_at',type:'TIMESTAMP',pk:false,fk:false,nn:true,unique:false},
+      {id:'f6',name:'updated_at',type:'TIMESTAMP',pk:false,fk:false,nn:false,unique:false},
+    ]},
+    {id:'t2',name:'sessions',color:'#2E9E5B',x:420,y:80,fields:[
+      {id:'f7',name:'id',type:'INTEGER',pk:true,fk:false,nn:true,unique:false},
+      {id:'f8',name:'user_id',type:'INTEGER',pk:false,fk:true,nn:true,unique:false},
+      {id:'f9',name:'token',type:'TEXT',pk:false,fk:false,nn:true,unique:true},
+      {id:'f10',name:'expires_at',type:'TIMESTAMP',pk:false,fk:false,nn:true,unique:false},
+      {id:'f11',name:'created_at',type:'TIMESTAMP',pk:false,fk:false,nn:true,unique:false},
+    ]},
+    {id:'t3',name:'password_resets',color:'#7B5EA7',x:250,y:320,fields:[
+      {id:'f12',name:'id',type:'INTEGER',pk:true,fk:false,nn:true,unique:false},
+      {id:'f13',name:'user_id',type:'INTEGER',pk:false,fk:true,nn:true,unique:false},
+      {id:'f14',name:'token',type:'TEXT',pk:false,fk:false,nn:true,unique:true},
+      {id:'f15',name:'expires_at',type:'TIMESTAMP',pk:false,fk:false,nn:true,unique:false},
+      {id:'f16',name:'used_at',type:'TIMESTAMP',pk:false,fk:false,nn:false,unique:false},
+    ]},
+  ],
+  relations:[
+    {id:'r1',from:'t1',to:'t2',fromField:'f1',toField:'f8',type:'1:N',label:''},
+    {id:'r2',from:'t1',to:'t3',fromField:'f1',toField:'f13',type:'1:N',label:''},
+  ],
+  nextId: 100,
+};
+
+// =============================================
+//  STATE VARS
+// =============================================
+let view = { x: 40, y: 40, scale: 1 };
+let selectedTable = null;
+let selectedRel = null;
+let dragging = null;
+let panning = false;
+let panStart = null;
+let currentTab = 'tables';
+let relDrawMode = false;
+let relDrawFrom = null;
+let relDrawFromField = null;
+
+const TABLE_COLORS = ['#185FA5','#7B5EA7','#2E9E5B','#0F6E56','#E0473E','#F4A623','#40d0c0','#f05a9a'];
+const FIELD_TYPES = ['INTEGER','UUID','TEXT','BIGINT','REAL','BLOB','BOOLEAN','TIMESTAMP','DATE','DECIMAL','VARCHAR(255)','VARCHAR(100)','VARCHAR(50)'];
+
+// =============================================
+//  INIT
+// =============================================
+function init() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved) {
+    try {
+      const data = JSON.parse(saved);
+      projects = data.projects || [];
+      currentProjectId = data.currentProjectId;
+    } catch(e) { projects = []; }
+  }
+  if(!projects.length) {
+    const p = {
+      id: genProjId(),
+      name: 'پروژه پیش‌فرض',
+      dbName: 'auth_db',
+      color: '#185FA5',
+      state: JSON.parse(JSON.stringify(LOGIN_SCHEMA))
+    };
+    projects.push(p);
+    currentProjectId = p.id;
+  }
+  if(!projects.find(x=>x.id===currentProjectId)) {
+    currentProjectId = projects[0].id;
+  }
+  renderProjectBar();
+  setupCanvas();
+  render();
+  updateStats();
+  fitView();
+}
+
+function renderProjectBar() {
+  const sel = document.getElementById('project-select');
+  const cur = projects.find(x=>x.id===currentProjectId);
+  sel.innerHTML = projects.map(p=>`<option value="${p.id}"${p.id===currentProjectId?' selected':''}>${p.name}</option>`).join('');
+  document.getElementById('pb-dbname').textContent = cur ? cur.dbName : '—';
+}
+
+function switchProject(id) {
+  if(id===currentProjectId) return;
+  currentProjectId = id;
+  selectedTable=null; selectedRel=null;
+  saveAll();
+  renderProjectBar();
+  render();
+  updateStats();
+  fitView();
+  const cur = projects.find(x=>x.id===id);
+  notify('پروژه «'+cur.name+'» انتخاب شد','success');
+}
+
+// =============================================
+//  PROJECTS MODAL
+// =============================================
+function openProjectsModal() {
+  renderProjectsModal();
+}
+
+function renderProjectsModal() {
+  const body = `
+    <div style="margin-bottom:12px">
+      <button class="s-btn primary" onclick="createNewProject()" style="width:auto;padding:7px 18px;display:inline-block">+ پروژه جدید</button>
+    </div>
+    <div class="s-section">پروژه‌های موجود (${projects.length})</div>
+    <div id="proj-list">
+    ${projects.map(p=>`
+      <div class="proj-item ${p.id===currentProjectId?'active-proj':''}">
+        <div class="proj-dot" style="background:${p.color}"></div>
+        <div class="proj-info">
+          <div class="pi-name">${p.name}</div>
+          <div class="pi-meta">${p.state.tables.length} جدول · ${p.state.relations.length} رابطه</div>
+        </div>
+        <span class="proj-db">${p.dbName}</span>
+        <button class="icon-btn" onclick="editProject('${p.id}')" title="ویرایش">✏️</button>
+        ${projects.length>1?`<button class="icon-btn del" onclick="deleteProject('${p.id}')" title="حذف پروژه">🗑</button>`:''}
+        ${p.id!==currentProjectId?`<button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="switchProject('${p.id}');closeModal()">انتخاب</button>`:'<span style="font-size:10px;color:var(--green)">● فعال</span>'}
+      </div>
+    `).join('')}
+    </div>
+  `;
+  showModal('مدیریت پروژه‌ها', body, null, null, 'wide');
+}
+
+function createNewProject() {
+  closeModal();
+  const colors = COLORS_PROJECT;
+  const color = colors[projects.length % colors.length];
+  showModal('پروژه جدید', `
+    <div class="form-group"><label>نام پروژه</label><input id="new-proj-name" placeholder="مثلاً: فروشگاه آنلاین" autofocus></div>
+    <div class="form-group"><label>نام دیتابیس</label><input id="new-proj-db" placeholder="مثلاً: shop_db"></div>
+    <div class="form-group">
+      <label>رنگ</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${colors.map((c,i)=>`<div onclick="document.getElementById('new-proj-color').value='${c}';document.getElementById('new-proj-color-preview').style.background='${c}'"
+          style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${i===projects.length%colors.length?'white':'transparent'}"></div>`).join('')}
+      </div>
+      <input type="hidden" id="new-proj-color" value="${color}">
+      <div id="new-proj-color-preview" style="width:32px;height:32px;border-radius:6px;background:${color};margin-top:8px"></div>
+    </div>
+  `, ()=>{
+    const name = document.getElementById('new-proj-name').value.trim();
+    const dbName = document.getElementById('new-proj-db').value.trim().replace(/\s+/g,'_') || 'my_db';
+    const col = document.getElementById('new-proj-color').value;
+    if(!name){notify('نام پروژه الزامی است','error');return false;}
+    const p = {id:genProjId(), name, dbName, color:col, state:{tables:[],relations:[],nextId:1}};
+    projects.push(p);
+    currentProjectId = p.id;
+    saveAll();
+    renderProjectBar();
+    render(); updateStats();
+    notify('پروژه «'+name+'» ایجاد شد','success');
+  });
+}
+
+function editProject(id) {
+  const p = projects.find(x=>x.id===id);
+  if(!p) return;
+  closeModal();
+  showModal('ویرایش پروژه', `
+    <div class="form-group"><label>نام پروژه</label><input id="edit-proj-name" value="${p.name}"></div>
+    <div class="form-group"><label>نام دیتابیس</label><input id="edit-proj-db" value="${p.dbName}"></div>
+    <div class="form-group">
+      <label>رنگ</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${COLORS_PROJECT.map(c=>`<div onclick="document.getElementById('edit-proj-color').value='${c}';document.getElementById('edit-proj-color-preview').style.background='${c}'"
+          style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===p.color?'white':'transparent'}"></div>`).join('')}
+      </div>
+      <input type="hidden" id="edit-proj-color" value="${p.color}">
+      <div id="edit-proj-color-preview" style="width:32px;height:32px;border-radius:6px;background:${p.color};margin-top:8px"></div>
+    </div>
+  `, ()=>{
+    p.name = document.getElementById('edit-proj-name').value.trim() || p.name;
+    p.dbName = document.getElementById('edit-proj-db').value.trim().replace(/\s+/g,'_') || p.dbName;
+    p.color = document.getElementById('edit-proj-color').value;
+    saveAll();
+    renderProjectBar();
+    notify('پروژه ذخیره شد','success');
+  });
+}
+
+function deleteProject(id) {
+  if(projects.length<=1){notify('حداقل یک پروژه باید وجود داشته باشد','error');return;}
+  const p = projects.find(x=>x.id===id);
+  if(!confirm(`پروژه «${p.name}» و تمام دیتای آن حذف شوند؟`)) return;
+  projects = projects.filter(x=>x.id!==id);
+  if(currentProjectId===id) {
+    currentProjectId = projects[0].id;
+    selectedTable=null; selectedRel=null;
+    render(); updateStats(); fitView();
+  }
+  saveAll();
+  renderProjectBar();
+  closeModal();
+  openProjectsModal();
+  notify('پروژه حذف شد');
+}
+
+// =============================================
+//  SAVE / NOTIFY
+// =============================================
+function save() {
+  saveAll();
+}
+
+function notify(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'notif-item' + (type ? ' '+type : '');
+  el.textContent = msg;
+  document.getElementById('notif').appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+// =============================================
+//  CANVAS / PANNING / ZOOM
+// =============================================
+function setupCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  const canvas = document.getElementById('canvas');
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+    const rect = wrap.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const oldScale = view.scale;
+    view.scale = Math.max(0.2, Math.min(3, view.scale + delta));
+    const ratio = view.scale / oldScale;
+    view.x = mx - (mx - view.x) * ratio;
+    view.y = my - (my - view.y) * ratio;
+    applyView();
+  }, {passive:false});
+  wrap.addEventListener('mousedown', e => {
+    if (e.target === wrap || e.target === canvas || e.target.id === 'relations-svg') {
+      panning = true;
+      panStart = {x: e.clientX - view.x, y: e.clientY - view.y};
+      canvas.classList.add('grabbing');
+      selectedTable = null; selectedRel = null;
+      renderSidebar(); renderRelations();
+      document.querySelectorAll('.tbl-node').forEach(n=>n.classList.remove('selected'));
+    }
+  });
+  window.addEventListener('mousemove', e => {
+    if (panning) { view.x = e.clientX - panStart.x; view.y = e.clientY - panStart.y; applyView(); }
+    if (dragging) {
+      const dx = (e.clientX - dragging.startMX) / view.scale;
+      const dy = (e.clientY - dragging.startMY) / view.scale;
+      dragging.table.x = dragging.startX + dx;
+      dragging.table.y = dragging.startY + dy;
+      const el = document.getElementById('node-'+dragging.table.id);
+      if (el) { el.style.left = dragging.table.x + 'px'; el.style.top = dragging.table.y + 'px'; }
+      renderRelations(); drawMinimap();
+    }
+  });
+  window.addEventListener('mouseup', ()=>{
+    if (dragging) { save(); drawMinimap(); }
+    panning = false; dragging = null;
+    document.getElementById('canvas').classList.remove('grabbing');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    const state = getState();
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedTable && !modalOpen()) deleteTable(selectedTable);
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRel && !modalOpen()) deleteRel(selectedRel);
+    if (e.key === '+' || e.key === '=') zoom(0.1);
+    if (e.key === '-') zoom(-0.1);
+    if (e.key === 'f' || e.key === 'F') fitView();
+  });
+}
+
+function applyView() {
+  const canvas = document.getElementById('canvas');
+  canvas.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.scale})`;
+  canvas.style.transformOrigin = '0 0';
+  document.getElementById('tb-zoom').textContent = Math.round(view.scale*100) + '%';
+}
+
+function zoom(delta) {
+  const wrap = document.getElementById('canvas-wrap');
+  const cx = wrap.clientWidth/2, cy = wrap.clientHeight/2;
+  const oldScale = view.scale;
+  view.scale = Math.max(0.2, Math.min(3, view.scale + delta));
+  const ratio = view.scale/oldScale;
+  view.x = cx - (cx - view.x)*ratio;
+  view.y = cy - (cy - view.y)*ratio;
+  applyView();
+}
+
+function fitView() {
+  const state = getState();
+  if (!state.tables.length) return;
+  const wrap = document.getElementById('canvas-wrap');
+  const pad = 80;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  state.tables.forEach(t=>{
+    const w = getNodeWidth(t), h = getNodeHeight(t);
+    minX=Math.min(minX,t.x); minY=Math.min(minY,t.y);
+    maxX=Math.max(maxX,t.x+w); maxY=Math.max(maxY,t.y+h);
+  });
+  const cw = wrap.clientWidth - pad*2, ch = wrap.clientHeight - pad*2;
+  const scaleX = cw/(maxX-minX||1), scaleY = ch/(maxY-minY||1);
+  view.scale = Math.min(scaleX, scaleY, 1.5);
+  view.x = pad - minX*view.scale;
+  view.y = pad - minY*view.scale;
+  applyView();
+}
+
+function autoLayout() {
+  const state = getState();
+  const cols = Math.ceil(Math.sqrt(state.tables.length));
+  const W = 240, H = 60 + 26*8, GAP_X = 60, GAP_Y = 80;
+  state.tables.forEach((t,i)=>{
+    const col = i%cols, row = Math.floor(i/cols);
+    t.x = col*(W+GAP_X) + 60;
+    t.y = row*(H+GAP_Y) + 60;
+  });
+  render(); save(); fitView();
+  notify('چیدمان به‌روز شد');
+}
+
+// =============================================
+//  RENDER
+// =============================================
+function getNodeWidth(t) { return Math.max(200, Math.max(...t.fields.map(f=>f.name.length))*7.5 + 100); }
+function getNodeHeight(t) { return 38 + t.fields.length * 26; }
+
+function render() {
+  const state = getState();
+  const canvas = document.getElementById('canvas');
+  document.querySelectorAll('.tbl-node').forEach(n=>n.remove());
+  state.tables.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tbl-node' + (selectedTable===t.id?' selected':'');
+    el.id = 'node-'+t.id;
+    el.style.left = t.x+'px'; el.style.top = t.y+'px';
+    el.style.minWidth = getNodeWidth(t)+'px';
+    el.innerHTML = `
+      <div class="node-hdr" style="background:${t.color}18;border-bottom:2px solid ${t.color}">
+        <div class="nh-color" style="background:${t.color}"></div>
+        <span class="nh-name" style="color:${t.color}">${t.name}</span>
+        <span class="nh-cnt">${t.fields.length}</span>
+      </div>
+      <div class="node-body">
+        ${t.fields.map(f=>`
+          <div class="nf-row" data-tid="${t.id}" data-fid="${f.id}">
+            <span class="nf-port" data-tid="${t.id}" data-fid="${f.id}" title="${f.name}"></span>
+            ${f.pk?'<span class="nf-pk">PK</span>':f.fk?'<span class="nf-fk">FK</span>':'<span style="width:18px"></span>'}
+            <span class="nf-name">${f.name}</span>
+            ${f.nn?'<span class="nf-nn">*</span>':''}
+            <span class="nf-type">${f.type}</span>
+          </div>
+        `).join('')}
+      </div>`;
+    el.querySelector('.node-hdr').addEventListener('mousedown', e=>{
+      if (e.button!==0) return;
+      e.stopPropagation();
+      selectedTable = t.id; selectedRel = null;
+      document.querySelectorAll('.tbl-node').forEach(n=>n.classList.remove('selected'));
+      el.classList.add('selected');
+      dragging = {table:t, startX:t.x, startY:t.y, startMX:e.clientX, startMY:e.clientY};
+      renderSidebar();
+    });
+    el.addEventListener('mousedown', e=>{
+      if(e.target.classList.contains('nf-port')) return;
+      selectedTable = t.id; selectedRel=null;
+      document.querySelectorAll('.tbl-node').forEach(n=>n.classList.remove('selected'));
+      el.classList.add('selected'); renderSidebar();
+    });
+    el.querySelector('.nh-name').addEventListener('dblclick', e=>{
+      e.stopPropagation(); openEditTableModal(t.id);
+    });
+    el.addEventListener('contextmenu', e=>{ e.preventDefault(); showCtxMenu(e, t.id); });
+    el.querySelectorAll('.nf-port').forEach(port=>{
+      port.addEventListener('mousedown', e=>{
+        e.stopPropagation();
+        if(!relDrawMode) return;
+        const tid = port.dataset.tid, fid = port.dataset.fid;
+        if(!relDrawFrom) {
+          relDrawFrom = tid; relDrawFromField = fid;
+          port.classList.add('active');
+          notify('حالا روی فیلد مقصد کلیک کنید');
+        } else {
+          if(relDrawFrom !== tid) addRelation(relDrawFrom, relDrawFromField, tid, fid);
+          relDrawMode=false; relDrawFrom=null; relDrawFromField=null;
+          document.querySelectorAll('.nf-port').forEach(p=>p.classList.remove('active'));
+        }
+      });
+    });
+    canvas.appendChild(el);
+  });
+  renderRelations(); renderSidebar(); updateStats(); drawMinimap();
+}
+
+function renderRelations() {
+  const state = getState();
+  const svg = document.getElementById('relations-svg');
+  svg.innerHTML = '';
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  ['default','selected'].forEach(type=>{
+    const m = document.createElementNS('http://www.w3.org/2000/svg','marker');
+    m.setAttribute('id','arrow-'+type);
+    m.setAttribute('viewBox','0 0 10 10');
+    m.setAttribute('refX','8'); m.setAttribute('refY','5');
+    m.setAttribute('markerWidth','6'); m.setAttribute('markerHeight','6');
+    m.setAttribute('orient','auto-start-reverse');
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d','M2 1L8 5L2 9');
+    p.setAttribute('fill','none');
+    p.setAttribute('stroke', type==='selected'?'#4d8ef0':'#3d4f70');
+    p.setAttribute('stroke-width','1.5'); p.setAttribute('stroke-linecap','round');
+    m.appendChild(p); defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+  state.relations.forEach(r => {
+    const ft = state.tables.find(t=>t.id===r.from);
+    const tt = state.tables.find(t=>t.id===r.to);
+    if(!ft||!tt) return;
+    const fromIdx = ft.fields.findIndex(f=>f.id===r.fromField);
+    const toIdx = tt.fields.findIndex(f=>f.id===r.toField);
+    const fw = getNodeWidth(ft), tw = getNodeWidth(tt);
+    const fy = ft.y + 38 + (fromIdx+0.5)*26;
+    const ty_ = tt.y + 38 + (toIdx+0.5)*26;
+    const ftCx = ft.x + fw/2, ttCx = tt.x + tw/2;
+    let x1,x2,y1=fy,y2=ty_;
+    if(ftCx < ttCx) { x1=ft.x+fw; x2=tt.x; } else { x1=ft.x; x2=tt.x+tw; }
+    const isSelected = selectedRel===r.id;
+    const cx = (x1+x2)/2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${x1} ${y1} C${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`);
+    path.setAttribute('class','rel-line'+(isSelected?' selected-rel':''));
+    path.setAttribute('stroke', isSelected?'#4d8ef0':'#3d4f70');
+    path.setAttribute('marker-end',`url(#arrow-${isSelected?'selected':'default'})`);
+    path.setAttribute('data-rid', r.id);
+    path.addEventListener('click', ()=>{ selectedRel=r.id; selectedTable=null; renderRelations(); if(currentTab==='relations') renderSidebar(); });
+    path.addEventListener('dblclick', e=>{ e.preventDefault(); openEditRelModal(r.id); });
+    svg.appendChild(path);
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('x',mx); lbl.setAttribute('y',my-6);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('class','rel-label');
+    lbl.setAttribute('fill', isSelected?'#4d8ef0':'#5a6a8a');
+    lbl.textContent = r.type||'1:N';
+    svg.appendChild(lbl);
+  });
+}
+
+// =============================================
+//  SIDEBAR
+// =============================================
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.s-tab').forEach((t,i)=>{
+    t.classList.toggle('active', ['tables','relations','export'][i]===tab);
+  });
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const state = getState();
+  const body = document.getElementById('sidebar-body');
+  if(currentTab==='tables') {
+    body.innerHTML = `
+      <button class="s-btn primary" onclick="openAddTableModal()">+ جدول جدید</button>
+      <div class="s-section">جداول (${state.tables.length})</div>
+      ${state.tables.map(t=>`
+        <div class="tbl-item ${selectedTable===t.id?'selected':''}" onclick="selectTable('${t.id}')">
+          <div class="tbl-header">
+            <div class="tbl-color" style="background:${t.color}"></div>
+            <span class="tbl-name">${t.name}</span>
+            <span class="tbl-count">${t.fields.length}</span>
+            <div class="tbl-actions">
+              <button class="icon-btn" onclick="event.stopPropagation();openEditTableModal('${t.id}')" title="ویرایش">✏️</button>
+              <button class="icon-btn del" onclick="event.stopPropagation();deleteTable('${t.id}')" title="حذف">🗑</button>
+            </div>
+          </div>
+          ${selectedTable===t.id?`
+          <div class="field-list">
+            ${t.fields.map(f=>`
+              <div class="field-row">
+                ${f.pk?'<span class="field-badge badge-pk">PK</span>':f.fk?'<span class="field-badge badge-fk">FK</span>':''}
+                <span class="field-name">${f.name}</span>
+                ${f.nn?'<span class="field-nn">*</span>':''}
+                <span class="field-type">${f.type}</span>
+              </div>
+            `).join('')}
+          </div>`:''}
+        </div>
+      `).join('')}`;
+  } else if(currentTab==='relations') {
+    body.innerHTML = `
+      <button class="s-btn primary" onclick="openAddRelModal()">+ رابطه جدید</button>
+      <div class="s-section">روابط (${state.relations.length})</div>
+      ${state.relations.map(r=>{
+        const ft=state.tables.find(t=>t.id===r.from);
+        const tt=state.tables.find(t=>t.id===r.to);
+        if(!ft||!tt) return '';
+        const ff=ft.fields.find(f=>f.id===r.fromField);
+        const tf=tt.fields.find(f=>f.id===r.toField);
+        return `<div class="rel-item ${selectedRel===r.id?'selected':''}">
+          <span class="ri-from">${ft.name}</span>
+          <span class="ri-arrow">.${ff?.name||'?'} →</span>
+          <span class="ri-to">${tt.name}.${tf?.name||'?'}</span>
+          <span class="ri-type">${r.type}</span>
+          <button class="icon-btn" onclick="openEditRelModal('${r.id}')" title="ویرایش">✏️</button>
+          <button class="icon-btn del" onclick="deleteRel('${r.id}')" title="حذف">🗑</button>
+        </div>`;
+      }).join('')}`;
+  } else if(currentTab==='export') {
+    const selected = selectedTable ? [state.tables.find(t=>t.id===selectedTable)].filter(Boolean) : null;
+    body.innerHTML = `
+      <div class="s-section">خروجی انتخابی</div>
+      <p style="font-size:11px;color:var(--text3);margin-bottom:10px">برای خروجی فقط یک جدول، ابتدا آن را انتخاب کنید</p>
+      <button class="s-btn" onclick="openExportModal('sql',true)">SQL — جدول انتخابی ${selected?'('+selected[0]?.name+')':'(انتخاب نشده)'}</button>
+      <button class="s-btn" onclick="openExportModal('json',true)">JSON — جدول انتخابی</button>
+      <div class="s-section" style="margin-top:16px">خروجی کامل</div>
+      <button class="s-btn primary" onclick="openExportModal('sql')">SQL — همه جداول</button>
+      <button class="s-btn" onclick="openExportModal('json')">JSON — کل schema</button>
+      <div class="s-section" style="margin-top:16px">ورودی</div>
+      <button class="s-btn" onclick="openImportModal()">📥 وارد‌کردن SQL / JSON</button>`;
+  }
+}
+
+function selectTable(id) {
+  const state = getState();
+  selectedTable = id; selectedRel = null;
+  document.querySelectorAll('.tbl-node').forEach(n=>n.classList.remove('selected'));
+  const node = document.getElementById('node-'+id);
+  if(node) node.classList.add('selected');
+  renderSidebar(); renderRelations();
+  const t = state.tables.find(x=>x.id===id);
+  if(t) {
+    const wrap = document.getElementById('canvas-wrap');
+    const cx = wrap.clientWidth/2, cy=wrap.clientHeight/2;
+    view.x = cx - (t.x + getNodeWidth(t)/2)*view.scale;
+    view.y = cy - (t.y + getNodeHeight(t)/2)*view.scale;
+    applyView();
+  }
+}
+
+function updateStats() {
+  const state = getState();
+  document.getElementById('st-tables').textContent = state.tables.length;
+  document.getElementById('st-fields').textContent = state.tables.reduce((a,t)=>a+t.fields.length,0);
+  document.getElementById('st-rels').textContent = state.relations.length;
+}
+
+// =============================================
+//  CONTEXT MENU
+// =============================================
+function showCtxMenu(e, tid) {
+  const menu = document.getElementById('ctx-menu');
+  menu.innerHTML = `
+    <div class="ctx-item" onclick="openEditTableModal('${tid}');hideCtx()">✏️ ویرایش جدول</div>
+    <div class="ctx-item" onclick="duplicateTable('${tid}');hideCtx()">📋 کپی جدول</div>
+    <div class="ctx-item" onclick="openExportModal('sql',false,'${tid}');hideCtx()">📤 خروجی SQL</div>
+    <div class="ctx-item" onclick="openExportModal('json',false,'${tid}');hideCtx()">📤 خروجی JSON</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" onclick="deleteTable('${tid}');hideCtx()">🗑 حذف جدول</div>`;
+  menu.style.display='block'; menu.style.left=e.clientX+'px'; menu.style.top=e.clientY+'px';
+  setTimeout(()=>document.addEventListener('click',hideCtx,{once:true}),10);
+}
+function hideCtx(){ document.getElementById('ctx-menu').style.display='none'; }
+
+// =============================================
+//  TABLE CRUD
+// =============================================
+function genId(prefix) {
+  const state = getState();
+  const id = prefix+(state.nextId++);
+  save();
+  return id;
+}
+
+function openAddTableModal() {
+  const fields = [
+    {id:'nf1',name:'id',type:'INTEGER',pk:true,fk:false,nn:true,unique:false},
+    {id:'nf2',name:'name',type:'TEXT',pk:false,fk:false,nn:true,unique:false},
+    {id:'nf3',name:'created_at',type:'TIMESTAMP',pk:false,fk:false,nn:true,unique:false},
+  ];
+  showModal('افزودن جدول جدید', buildTableForm({name:'',color:'#185FA5',fields}), ()=>{
+    const state = getState();
+    const name = document.getElementById('tbl-name').value.trim().toLowerCase().replace(/\s+/g,'_');
+    const color = document.getElementById('tbl-color').value;
+    if(!name) { notify('نام جدول الزامی است','error'); return false; }
+    if(state.tables.find(t=>t.name===name)) { notify('این نام قبلاً استفاده شده','error'); return false; }
+    const newFields = readFieldsFromForm();
+    const wrap = document.getElementById('canvas-wrap');
+    const cx = (wrap.clientWidth/2 - view.x)/view.scale;
+    const cy = (wrap.clientHeight/2 - view.y)/view.scale;
+    state.tables.push({id:genId('t'),name,color,x:cx-100,y:cy-80,fields:newFields});
+    save(); render(); notify('جدول '+name+' اضافه شد','success');
+  });
+}
+
+function openEditTableModal(tid) {
+  const state = getState();
+  const t = state.tables.find(x=>x.id===tid);
+  if(!t) return;
+  showModal('ویرایش جدول: '+t.name, buildTableForm(t), ()=>{
+    const name = document.getElementById('tbl-name').value.trim().toLowerCase().replace(/\s+/g,'_');
+    const color = document.getElementById('tbl-color').value;
+    if(!name) { notify('نام جدول الزامی است','error'); return false; }
+    const conflict = state.tables.find(x=>x.name===name && x.id!==tid);
+    if(conflict) { notify('این نام قبلاً استفاده شده','error'); return false; }
+    t.name = name; t.color = color;
+    t.fields = readFieldsFromForm();
+    save(); render(); notify('جدول ذخیره شد','success');
+  }, ()=>{
+    if(confirm('جدول و تمام روابطش حذف شوند؟')) { deleteTable(tid); closeModal(); }
+  });
+}
+
+function buildTableForm(t) {
+  return `
+    <div class="form-group">
+      <label>نام جدول</label>
+      <input id="tbl-name" value="${t.name}" placeholder="table_name">
+    </div>
+    <div class="form-group">
+      <label>رنگ</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        ${TABLE_COLORS.map(c=>`<div onclick="document.getElementById('tbl-color').value='${c}';document.getElementById('color-preview').style.background='${c}'"
+          style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===t.color?'white':'transparent'}"></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="color" id="tbl-color" value="${t.color}" style="width:40px;height:32px;padding:2px">
+        <div id="color-preview" style="width:32px;height:32px;border-radius:6px;background:${t.color}"></div>
+        <span style="font-size:11px;color:var(--text3)">رنگ دلخواه</span>
+      </div>
+    </div>
+    <div style="margin-bottom:6px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">فیلدها</div>
+    <div id="fields-list">
+      ${t.fields.map((f,i)=>buildFieldRow(f,i)).join('')}
+    </div>
+    <button id="add-field-btn" onclick="addFieldRow()">+ افزودن فیلد</button>`;
+}
+
+let _fieldCounter = 0;
+function buildFieldRow(f, i) {
+  const id = 'fe-'+(_fieldCounter++);
+  return `<div class="field-editor-row" id="${id}">
+    <input class="fe-name" placeholder="field_name" value="${f.name}" title="نام فیلد">
+    <select class="fe-type">${FIELD_TYPES.map(tp=>`<option${tp===f.type?' selected':''}>${tp}</option>`).join('')}</select>
+    <label class="fe-check"><input type="checkbox" class="fe-pk" ${f.pk?'checked':''}> PK</label>
+    <label class="fe-check"><input type="checkbox" class="fe-fk" ${f.fk?'checked':''}> FK</label>
+    <label class="fe-check"><input type="checkbox" class="fe-nn" ${f.nn?'checked':''}> *</label>
+    <label class="fe-check"><input type="checkbox" class="fe-uq" ${f.unique?'checked':''}> UQ</label>
+    <button class="fe-del" onclick="this.parentElement.remove()" title="حذف">×</button>
+  </div>`;
+}
+
+function addFieldRow() {
+  const list = document.getElementById('fields-list');
+  const div = document.createElement('div');
+  div.innerHTML = buildFieldRow({name:'',type:'TEXT',pk:false,fk:false,nn:false,unique:false},0);
+  list.appendChild(div.firstChild);
+}
+
+function readFieldsFromForm() {
+  const state = getState();
+  return [...document.querySelectorAll('#fields-list .field-editor-row')].map(row=>({
+    id: 'f'+(state.nextId++),
+    name: row.querySelector('.fe-name').value.trim(),
+    type: row.querySelector('.fe-type').value,
+    pk: row.querySelector('.fe-pk').checked,
+    fk: row.querySelector('.fe-fk').checked,
+    nn: row.querySelector('.fe-nn').checked,
+    unique: row.querySelector('.fe-uq').checked,
+  })).filter(f=>f.name);
+}
+
+function deleteTable(tid) {
+  const state = getState();
+  state.tables = state.tables.filter(t=>t.id!==tid);
+  state.relations = state.relations.filter(r=>r.from!==tid && r.to!==tid);
+  if(selectedTable===tid) selectedTable=null;
+  save(); render(); notify('جدول حذف شد');
+}
+
+function duplicateTable(tid) {
+  const state = getState();
+  const t = state.tables.find(x=>x.id===tid);
+  if(!t) return;
+  const newT = JSON.parse(JSON.stringify(t));
+  newT.id = 't'+state.nextId++;
+  newT.name = t.name+'_copy';
+  newT.x = t.x+40; newT.y = t.y+40;
+  newT.fields = newT.fields.map(f=>({...f,id:'f'+state.nextId++}));
+  state.tables.push(newT);
+  save(); render(); notify('جدول کپی شد','success');
+}
+
+// =============================================
+//  RELATION CRUD
+// =============================================
+function addRelation(fromTid, fromFid, toTid, toFid) {
+  const state = getState();
+  state.relations.push({
+    id: 'r'+state.nextId++,
+    from: fromTid, to: toTid,
+    fromField: fromFid, toField: toFid,
+    type: '1:N', label: ''
+  });
+  save(); renderRelations(); renderSidebar(); updateStats();
+  notify('رابطه اضافه شد','success');
+}
+
+function openAddRelModal() {
+  const state = getState();
+  const tableOpts = state.tables.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  showModal('افزودن رابطه', `
+    <div class="form-group"><label>جدول مبدا</label><select id="rel-from" onchange="updateRelFieldOpts()">${tableOpts}</select></div>
+    <div class="form-group"><label>فیلد مبدا</label><select id="rel-from-field"></select></div>
+    <div class="form-group"><label>جدول مقصد</label><select id="rel-to" onchange="updateRelFieldOpts(true)">${tableOpts}</select></div>
+    <div class="form-group"><label>فیلد مقصد</label><select id="rel-to-field"></select></div>
+    <div class="form-group"><label>نوع رابطه</label>
+      <select id="rel-type">
+        <option value="1:N">1:N — یک به چند</option>
+        <option value="N:1">N:1 — چند به یک</option>
+        <option value="1:1">1:1 — یک به یک</option>
+        <option value="N:N">N:N — چند به چند</option>
+      </select></div>
+    <div class="form-group"><label>برچسب (اختیاری)</label><input id="rel-label" placeholder="مثلاً: ایجاد می‌کند"></div>
+  `, ()=>{
+    const state = getState();
+    const from=document.getElementById('rel-from').value;
+    const to=document.getElementById('rel-to').value;
+    const ff=document.getElementById('rel-from-field').value;
+    const tf=document.getElementById('rel-to-field').value;
+    const type=document.getElementById('rel-type').value;
+    const label=document.getElementById('rel-label').value;
+    if(!from||!to||!ff||!tf){notify('تمام فیلدها الزامی است','error');return false;}
+    state.relations.push({id:'r'+state.nextId++,from,to,fromField:ff,toField:tf,type,label});
+    save();render();notify('رابطه اضافه شد','success');
+  });
+  setTimeout(()=>{updateRelFieldOpts();updateRelFieldOpts(true);},50);
+}
+
+function updateRelFieldOpts(isTo=false) {
+  const state = getState();
+  const selId = isTo?'rel-to':'rel-from';
+  const outId = isTo?'rel-to-field':'rel-from-field';
+  const sel = document.getElementById(selId);
+  const out = document.getElementById(outId);
+  if(!sel||!out) return;
+  const t = state.tables.find(x=>x.id===sel.value);
+  if(t) out.innerHTML = t.fields.map(f=>`<option value="${f.id}">${f.name} (${f.type})</option>`).join('');
+}
+
+function openEditRelModal(rid) {
+  const state = getState();
+  const r = state.relations.find(x=>x.id===rid);
+  if(!r) return;
+  const tableOpts = (sel) => state.tables.map(t=>`<option value="${t.id}"${t.id===sel?' selected':''}>${t.name}</option>`).join('');
+  const ft=state.tables.find(t=>t.id===r.from);
+  const tt=state.tables.find(t=>t.id===r.to);
+  showModal('ویرایش رابطه', `
+    <div class="form-group"><label>جدول مبدا</label><select id="rel-from">${tableOpts(r.from)}</select></div>
+    <div class="form-group"><label>فیلد مبدا</label>
+      <select id="rel-from-field">${ft?ft.fields.map(f=>`<option value="${f.id}"${f.id===r.fromField?' selected':''}>${f.name}</option>`).join(''):''}</select></div>
+    <div class="form-group"><label>جدول مقصد</label><select id="rel-to">${tableOpts(r.to)}</select></div>
+    <div class="form-group"><label>فیلد مقصد</label>
+      <select id="rel-to-field">${tt?tt.fields.map(f=>`<option value="${f.id}"${f.id===r.toField?' selected':''}>${f.name}</option>`).join(''):''}</select></div>
+    <div class="form-group"><label>نوع</label>
+      <select id="rel-type">${['1:N','N:1','1:1','N:N'].map(tp=>`<option${tp===r.type?' selected':''}>${tp}</option>`).join('')}</select></div>
+    <div class="form-group"><label>برچسب</label><input id="rel-label" value="${r.label||''}"></div>
+  `, ()=>{
+    r.from=document.getElementById('rel-from').value;
+    r.fromField=document.getElementById('rel-from-field').value;
+    r.to=document.getElementById('rel-to').value;
+    r.toField=document.getElementById('rel-to-field').value;
+    r.type=document.getElementById('rel-type').value;
+    r.label=document.getElementById('rel-label').value;
+    save();renderRelations();renderSidebar();notify('رابطه ذخیره شد','success');
+  }, ()=>{ deleteRel(rid); closeModal(); });
+}
+
+function deleteRel(rid) {
+  const state = getState();
+  state.relations = state.relations.filter(r=>r.id!==rid);
+  if(selectedRel===rid) selectedRel=null;
+  save(); renderRelations(); renderSidebar(); updateStats(); notify('رابطه حذف شد');
+}
+
+// =============================================
+//  EXPORT / SQL GENERATION
+// =============================================
+function openExportModal(fmt, onlySelected=false, specificId=null) {
+  const state = getState();
+  const cur = projects.find(x=>x.id===currentProjectId);
+  const tid = specificId || (onlySelected ? selectedTable : null);
+  const tables = tid ? state.tables.filter(t=>t.id===tid) : state.tables;
+  const rels = tid ? state.relations.filter(r=>r.from===tid||r.to===tid) : state.relations;
+  let content = '';
+  if(fmt==='sql') content = generateSQL(tables, rels, cur?.dbName || 'my_db');
+  else content = JSON.stringify({database: cur?.dbName, tables, relations: rels}, null, 2);
+  const title = fmt.toUpperCase() + ' Export' + (tid?' ('+tables[0]?.name+')':' — همه جداول');
+  showModal(title, `
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+      <button class="s-btn" onclick="copyExport()" style="width:auto;padding:6px 14px">📋 کپی</button>
+      <button class="s-btn" onclick="downloadExport('${fmt}','${tid||'all'}')" style="width:auto;padding:6px 14px">⬇️ دانلود</button>
+      <span style="font-size:11px;color:var(--teal);background:var(--teal-bg);border-radius:4px;padding:2px 8px">${cur?.dbName||'db'}</span>
+      <span style="font-size:11px;color:var(--text3);margin-right:auto">${tables.length} جدول · ${rels.length} رابطه</span>
+    </div>
+    <pre class="export-area" id="export-content">${escHtml(content)}</pre>
+  `, null, null, 'wide');
+}
+
+function generateSQL(tables, rels, dbName) {
+  let sql = `-- MeRoS ERD Export\n-- Generated: ${new Date().toISOString().slice(0,10)}\n-- Database: ${dbName}\n\n`;
+  sql += `CREATE DATABASE IF NOT EXISTS \`${dbName}\`;\nUSE \`${dbName}\`;\n\n`;
+  sql += `PRAGMA foreign_keys = ON;\n\n`;
+  tables.forEach(t=>{
+    sql += `-- ${'─'.repeat(50)}\nCREATE TABLE IF NOT EXISTS \`${t.name}\` (\n`;
+    const lines = t.fields.map(f=>{
+      let line = `    \`${f.name}\`${' '.repeat(Math.max(1,24-f.name.length))}${f.type}`;
+      if(f.pk) line += ' PRIMARY KEY';
+      if(f.nn && !f.pk) line += ' NOT NULL';
+      if(f.unique && !f.pk) line += ' UNIQUE';
+      return line;
+    });
+    // Add FK constraints inline
+    const fkLines = [];
+    rels.forEach(r=>{
+      if(r.to===t.id) {
+        const ft=tables.find(x=>x.id===r.from)||getState().tables.find(x=>x.id===r.from);
+        const ff=ft?.fields.find(f=>f.id===r.fromField);
+        const tf=t.fields.find(f=>f.id===r.toField);
+        if(ft&&ff&&tf) fkLines.push(`    FOREIGN KEY (\`${tf.name}\`) REFERENCES \`${ft.name}\`(\`${ff.name}\`) ON DELETE CASCADE`);
+      }
+    });
+    sql += [...lines,...fkLines].join(',\n') + '\n);\n\n';
+    t.fields.filter(f=>f.fk).forEach(f=>{
+      sql += `CREATE INDEX IF NOT EXISTS idx_${t.name}_${f.name} ON \`${t.name}\`(\`${f.name}\`);\n`;
+    });
+    sql += '\n';
+  });
+  return sql;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function copyExport() {
+  const txt = document.getElementById('export-content')?.textContent;
+  if(txt) { navigator.clipboard.writeText(txt); notify('کپی شد','success'); }
+}
+
+function downloadExport(fmt, label) {
+  const cur = projects.find(x=>x.id===currentProjectId);
+  const txt = document.getElementById('export-content')?.textContent;
+  if(!txt) return;
+  const blob = new Blob([txt], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `meros_${cur?.dbName||'db'}_${label}.${fmt}`;
+  a.click();
+  notify('دانلود شروع شد','success');
+}
+
+// =============================================
+//  IMPORT (SQL + JSON, paste + file)
+// =============================================
+function openImportModal() {
+  showModal('ورودی Schema', `
+    <div class="import-tabs">
+      <button class="import-tab active" id="itab-sql" onclick="switchImportTab('sql')">SQL</button>
+      <button class="import-tab" id="itab-json" onclick="switchImportTab('json')">JSON</button>
+    </div>
+    <div id="import-sql-panel">
+      <p style="font-size:11px;color:var(--text3);margin-bottom:8px">SQL را پیست کنید یا فایل آپلود کنید. جداول CREATE TABLE پارس می‌شوند.</p>
+      <div class="import-drop-area" id="sql-drop" onclick="document.getElementById('file-input-sql').click()">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 16V8M8 12l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/></svg>
+        کلیک یا درگ برای آپلود فایل .sql
+      </div>
+      <div class="form-group" style="margin-top:8px">
+        <label>یا مستقیم پیست کنید</label>
+        <textarea id="sql-paste" rows="8" style="font-family:monospace;font-size:11px;resize:vertical" placeholder="CREATE TABLE users (&#10;  id INTEGER PRIMARY KEY,&#10;  username TEXT NOT NULL&#10;);"></textarea>
+      </div>
+      <div id="sql-parse-preview"></div>
+    </div>
+    <div id="import-json-panel" style="display:none">
+      <p style="font-size:11px;color:var(--text3);margin-bottom:8px">JSON schema را پیست کنید یا فایل آپلود کنید.</p>
+      <div class="import-drop-area" id="json-drop" onclick="document.getElementById('file-input-json').click()">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 16V8M8 12l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/></svg>
+        کلیک یا درگ برای آپلود فایل .json
+      </div>
+      <div class="form-group" style="margin-top:8px">
+        <label>یا مستقیم پیست کنید</label>
+        <textarea id="json-paste" rows="8" style="font-family:monospace;font-size:11px;resize:vertical" placeholder='{"tables":[...],"relations":[]}'></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="s-btn" onclick="previewImport()" style="width:auto;padding:6px 14px">🔍 پیش‌نمایش</button>
+    </div>
+  `, ()=>{ doImport(); }, null, 'wide');
+  // Drag and drop
+  setupDropZone('sql-drop','sql');
+  setupDropZone('json-drop','json');
+}
+
+function switchImportTab(tab) {
+  document.getElementById('import-sql-panel').style.display = tab==='sql'?'':'none';
+  document.getElementById('import-json-panel').style.display = tab==='json'?'':'none';
+  document.getElementById('itab-sql').classList.toggle('active', tab==='sql');
+  document.getElementById('itab-json').classList.toggle('active', tab==='json');
+}
+
+function setupDropZone(zoneId, type) {
+  const zone = document.getElementById(zoneId);
+  if(!zone) return;
+  zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', ()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e=>{
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      if(type==='sql') document.getElementById('sql-paste').value = ev.target.result;
+      else document.getElementById('json-paste').value = ev.target.result;
+    };
+    reader.readAsText(file);
+  });
+}
+
+function previewImport() {
+  const sqlPanel = document.getElementById('import-sql-panel');
+  const isSQL = sqlPanel && sqlPanel.style.display !== 'none';
+  const preview = document.getElementById('sql-parse-preview');
+  if(!preview) return;
+  if(isSQL) {
+    const sql = document.getElementById('sql-paste')?.value?.trim();
+    if(!sql) { preview.innerHTML=''; return; }
+    try {
+      const parsed = parseSQL(sql);
+      if(parsed.tables.length===0) {
+        preview.innerHTML='<div class="sql-parse-result error-result">هیچ جدولی پیدا نشد. مطمئن شوید فرمت CREATE TABLE صحیح است.</div>';
+      } else {
+        preview.innerHTML=`<div class="sql-parse-result">${parsed.tables.length} جدول پیدا شد: ${parsed.tables.map(t=>t.name).join(', ')}</div>`;
+      }
+    } catch(e) {
+      preview.innerHTML=`<div class="sql-parse-result error-result">خطای پارس: ${e.message}</div>`;
+    }
+  }
+}
+
+function doImport() {
+  const sqlPanel = document.getElementById('import-sql-panel');
+  const isSQL = sqlPanel && sqlPanel.style.display !== 'none';
+  if(isSQL) {
+    const sql = document.getElementById('sql-paste')?.value?.trim();
+    if(!sql) { notify('متن SQL خالی است','error'); return false; }
+    try {
+      const parsed = parseSQL(sql);
+      if(!parsed.tables.length) { notify('هیچ جدولی پیدا نشد','error'); return false; }
+      applyParsedSchema(parsed);
+    } catch(e) { notify('خطا: '+e.message,'error'); return false; }
+  } else {
+    const json = document.getElementById('json-paste')?.value?.trim();
+    if(!json) { notify('متن JSON خالی است','error'); return false; }
+    try {
+      const data = JSON.parse(json);
+      if(!data.tables) { notify('فرمت JSON معتبر نیست','error'); return false; }
+      applyParsedSchema(data);
+    } catch(e) { notify('خطای JSON: '+e.message,'error'); return false; }
+  }
+}
+
+function applyParsedSchema(data) {
+  if(!confirm('آیا schema فعلی جایگزین شود؟ ('+data.tables.length+' جدول)')) return false;
+  const state = getState();
+  // Re-ID everything
+  let idCnt = state.nextId;
+  const tIdMap = {};
+  const newTables = data.tables.map(t=>{
+    const newId = 't'+(idCnt++);
+    tIdMap[t.id||t.name] = newId;
+    const fIdMap = {};
+    const fields = (t.fields||[]).map(f=>{
+      const fid = 'f'+(idCnt++);
+      fIdMap[f.id||f.name] = fid;
+      return {...f, id:fid};
+    });
+    return {...t, id:newId, fields, _fIdMap:fIdMap};
+  });
+  // Auto-layout
+  const cols = Math.ceil(Math.sqrt(newTables.length));
+  newTables.forEach((t,i)=>{
+    t.x = (i%cols)*280+60; t.y = Math.floor(i/cols)*260+60;
+    delete t._fIdMap;
+  });
+  const newRels = (data.relations||[]).map(r=>{
+    return {
+      id:'r'+(idCnt++),
+      from:tIdMap[r.from]||r.from,
+      to:tIdMap[r.to]||r.to,
+      fromField:r.fromField, toField:r.toField,
+      type:r.type||'1:N', label:r.label||''
+    };
+  }).filter(r=>r.from&&r.to);
+  state.tables = newTables;
+  state.relations = newRels;
+  state.nextId = idCnt;
+  save(); render(); fitView();
+  notify('Schema وارد شد: '+newTables.length+' جدول','success');
+}
+
+// =============================================
+//  SQL PARSER
+// =============================================
+function parseSQL(sql) {
+  const tables = [];
+  // Remove comments
+  let cleaned = sql.replace(/--[^\n]*/g,'').replace(/\/\*[\s\S]*?\*\//g,'');
+  // Match CREATE TABLE blocks
+  const createRe = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`'"]?(\w+)[`'"]?\s*\(([^;]*)\)/gi;
+  let match;
+  while((match=createRe.exec(cleaned))!==null) {
+    const tblName = match[1].replace(/[`'"]/g,'');
+    const body = match[2];
+    const fields = [];
+    const lines = body.split(',').map(l=>l.trim()).filter(l=>l && !l.match(/^\s*(KEY|INDEX|CONSTRAINT|PRIMARY KEY\s*\(|UNIQUE KEY|FOREIGN KEY)/i));
+    const TYPES_RE = /INTEGER|INT|BIGINT|REAL|FLOAT|DOUBLE|DECIMAL|TEXT|VARCHAR|CHAR|BOOLEAN|BOOL|BLOB|UUID|TIMESTAMP|DATE|DATETIME/i;
+    lines.forEach(line=>{
+      const colMatch = line.match(/^[`'"]?(\w+)[`'"]?\s+((?:VARCHAR|CHAR)\s*\(\d+\)|[A-Z]+)/i);
+      if(!colMatch) return;
+      const fname = colMatch[1];
+      let ftype = colMatch[2].toUpperCase();
+      // Normalize
+      if(ftype==='INT') ftype='INTEGER';
+      if(ftype.startsWith('BOOL')) ftype='BOOLEAN';
+      if(ftype.startsWith('DATETIME')) ftype='TIMESTAMP';
+      if(ftype.startsWith('FLOAT')||ftype.startsWith('DOUBLE')) ftype='REAL';
+      const pk = /PRIMARY\s+KEY/i.test(line);
+      const nn = /NOT\s+NULL/i.test(line) || pk;
+      const uq = /UNIQUE/i.test(line) && !pk;
+      const fk = /REFERENCES/i.test(line);
+      fields.push({id:fname, name:fname, type:ftype, pk, fk, nn, unique:uq});
+    });
+    if(fields.length) tables.push({id:tblName, name:tblName, color:TABLE_COLORS[tables.length%TABLE_COLORS.length], fields});
+  }
+  return {tables, relations:[]};
+}
+
+// =============================================
+//  FILE IMPORT HANDLER
+// =============================================
+function handleFileImport(e, type) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const content = ev.target.result;
+    if(type==='json') {
+      const ta = document.getElementById('json-paste');
+      if(ta) { ta.value = content; switchImportTab('json'); }
+      else {
+        try {
+          const data = JSON.parse(content);
+          if(data.tables) applyParsedSchema(data);
+          else notify('فرمت JSON معتبر نیست','error');
+        } catch(err) { notify('خطا در خواندن فایل JSON','error'); }
+      }
+    } else {
+      const ta = document.getElementById('sql-paste');
+      if(ta) { ta.value = content; switchImportTab('sql'); }
+      else {
+        try {
+          const parsed = parseSQL(content);
+          if(parsed.tables.length) applyParsedSchema(parsed);
+          else notify('هیچ جدولی پیدا نشد','error');
+        } catch(err) { notify('خطا در خواندن فایل SQL','error'); }
+      }
+    }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// =============================================
+//  MODAL
+// =============================================
+function showModal(title, body, onSave, onDelete=null, extraClass='') {
+  const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
+  content.className = 'modal' + (extraClass?' '+extraClass:'');
+  content.innerHTML = `
+    <h2>${title}</h2>
+    <div id="modal-body">${body}</div>
+    <div class="modal-footer">
+      ${onDelete?`<button onclick="onDeleteCb()" class="danger">🗑 حذف</button>`:''}
+      <button onclick="closeModal()">لغو</button>
+      ${onSave?`<button class="primary" onclick="onSaveCb()">ذخیره</button>`:''}
+    </div>`;
+  overlay.classList.add('open');
+  window._onSaveCb = onSave;
+  window._onDeleteCb = onDelete;
+  const colorInput = content.querySelector('#tbl-color');
+  const colorPreview = content.querySelector('#color-preview');
+  if(colorInput && colorPreview) colorInput.addEventListener('input', ()=>{ colorPreview.style.background=colorInput.value; });
+  ['rel-from','rel-to'].forEach((id,i)=>{
+    const el = content.querySelector('#'+id);
+    if(el) el.addEventListener('change',()=>updateRelFieldOpts(i===1));
+  });
+}
+window.onSaveCb = ()=>{ const r=window._onSaveCb&&window._onSaveCb(); if(r!==false) closeModal(); };
+window.onDeleteCb = ()=>window._onDeleteCb&&window._onDeleteCb();
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  window._onSaveCb=null; window._onDeleteCb=null;
+}
+function modalOpen() { return document.getElementById('modal-overlay').classList.contains('open'); }
+document.getElementById('modal-overlay').addEventListener('mousedown', e=>{
+  if(e.target===document.getElementById('modal-overlay')) closeModal();
+});
+
+// =============================================
+//  MINIMAP
+// =============================================
+function drawMinimap() {
+  const state = getState();
+  const canvas = document.getElementById('mm-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width=160; canvas.height=110;
+  ctx.clearRect(0,0,160,110);
+  if(!state.tables.length) return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  state.tables.forEach(t=>{
+    const w=getNodeWidth(t),h=getNodeHeight(t);
+    minX=Math.min(minX,t.x);minY=Math.min(minY,t.y);
+    maxX=Math.max(maxX,t.x+w);maxY=Math.max(maxY,t.y+h);
+  });
+  const pw=maxX-minX||1, ph=maxY-minY||1;
+  const sx=140/pw, sy=90/ph, s=Math.min(sx,sy);
+  const ox=10, oy=10;
+  state.tables.forEach(t=>{
+    const x=ox+(t.x-minX)*s, y=oy+(t.y-minY)*s;
+    const w=getNodeWidth(t)*s, h=getNodeHeight(t)*s;
+    ctx.fillStyle=t.color+'88'; ctx.strokeStyle=t.color; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.roundRect(x,y,Math.max(w,4),Math.max(h,4),2);
+    ctx.fill(); ctx.stroke();
+  });
+}
+
+// =============================================
+//  HELP
+// =============================================
+function showHelp() {
+  showModal('راهنمای استفاده', `
+    <div style="font-size:12px;color:var(--text2);line-height:2">
+      <b style="color:var(--text)">پروژه‌ها</b><br>
+      هر پروژه یک دیتابیس مجزا دارد. از نوار بالا پروژه‌ها را مدیریت کنید.<br><br>
+      <b style="color:var(--text)">ورودی SQL</b><br>
+      از دکمه «ورودی» می‌توانید SQL یا JSON را پیست یا آپلود کنید. جداول CREATE TABLE پارس می‌شوند.<br><br>
+      <b style="color:var(--text)">کلیدهای میانبر</b><br>
+      <span class="kbd">+</span> / <span class="kbd">-</span> — زوم<br>
+      <span class="kbd">F</span> — تنظیم نمایش<br>
+      <span class="kbd">Del</span> — حذف انتخاب‌شده<br>
+      <span class="kbd">Esc</span> — بستن پنجره<br><br>
+      <b style="color:var(--text)">ماوس</b><br>
+      🖱️ چرخ — زوم<br>
+      🖱️ درگ کنار خالی — جابجایی دید<br>
+      🖱️ درگ هدر جدول — جابجایی جدول<br>
+      🖱️ دابل‌کلیک نام جدول — ویرایش<br>
+      🖱️ راست‌کلیک روی جدول — منوی سریع<br><br>
+      <b style="color:var(--text)">ذخیره‌سازی</b><br>
+      تمام تغییرات به‌صورت خودکار در مرورگر ذخیره می‌شوند.<br>
+    </div>
+  `, null);
+}
+
+// =============================================
+//  RESET
+// =============================================
+function resetAll() {
+  showModal('پاک‌کردن همه جداول', `
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">تمام جداول، فیلدها و روابط پروژه فعلی پاک می‌شوند.</p>
+    <p style="color:var(--red);font-size:12px">آیا مطمئن هستید؟</p>
+  `, ()=>{
+    const state = getState();
+    state.tables=[]; state.relations=[]; state.nextId=1;
+    save(); render(); notify('همه چیز پاک شد');
+  });
+}
+
+// =============================================
+//  START
+// =============================================
+init();
+</script>
+</body>
+</html>
